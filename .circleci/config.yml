@@ -1,37 +1,207 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
-# For a detailed guide to building and testing on iOS, read the docs:
-# https://circleci.com/docs/testing-ios/
-version: 2.1
+I'll try to generate the code for iOS. I'm assuming you want it in Swift for iPhone. Here is a possible code snippet:
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/configuration-reference/#jobs
-jobs:
-  build:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/configuration-reference/#docker-machine-macos-windows-executor
-    macos:
-      xcode: 11.0.0 # Specify the Xcode version to use
+```swift
+// Import the necessary frameworks
+import UIKit
+import AVFoundation
+import Photos
 
-    # Add steps to the job
-    # See: https://circleci.com/docs/configuration-reference/#steps
-    steps:
-      - checkout
-      - run: pod install # Install CocoaPods dependencies
-      - run: fastlane scan # Run tests using Fastlane
+// Create a class for the main view controller
+class ViewController: UIViewController {
 
-      # Collect XML test results data to show in the UI, and save the same XML
-      # files under test-results folder in the Artifacts tab
-      - store_test_results:
-          path: test_output
-      - store_artifacts:
-          path: test_output
-          destination: scan-output
+    // Declare some variables for the views
+    var imageView: UIImageView!
+    var textView: UILabel!
+    var cameraButton: UIButton!
+    var plantnetButton: UIButton!
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/configuration-reference/#workflows
-workflows:
-  sample: # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
-    jobs:
-      - build
+    // Declare a variable for the image picker controller
+    var imagePicker: UIImagePickerController!
+
+    // Override the viewDidLoad method to initialize the views and set the constraints
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Initialize the image view
+        imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Initialize the text view
+        textView = UILabel()
+        textView.textAlignment = .center
+        textView.font = UIFont.systemFont(ofSize: 20)
+        textView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Initialize the camera button
+        cameraButton = UIButton()
+        cameraButton.setTitle("Take Photo", for: .normal)
+        cameraButton.setTitleColor(.white, for: .normal)
+        cameraButton.backgroundColor = .systemBlue
+        cameraButton.layer.cornerRadius = 10
+        cameraButton.translatesAutoresizingMaskIntoConstraints = false
+
+        // Initialize the plantnet button
+        plantnetButton = UIButton()
+        plantnetButton.setTitle("Identify Plant", for: .normal)
+        plantnetButton.setTitleColor(.white, for: .normal)
+        plantnetButton.backgroundColor = .systemGreen
+        plantnetButton.layer.cornerRadius = 10
+        plantnetButton.translatesAutoresizingMaskIntoConstraints = false
+
+        // Add the views to the main view
+        view.addSubview(imageView)
+        view.addSubview(textView)
+        view.addSubview(cameraButton)
+        view.addSubview(plantnetButton)
+
+        // Set the constraints for the views using anchors
+        imageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20).isActive = true
+        imageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20).isActive = true
+        imageView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20).isActive = true
+        imageView.heightAnchor.constraint(equalToConstant: 300).isActive = true
+
+        textView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 20).isActive = true
+        textView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20).isActive = true
+        textView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20).isActive = true
+
+        cameraButton.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 20).isActive = true
+        cameraButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20).isActive = true
+        cameraButton.trailingAnchor.constraint(equalTo: view.centerXAnchor, constant: -10).isActive = true
+
+        plantnetButton.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 20).isActive = true
+        plantnetButton.leadingAnchor.constraint(equalTo: view.centerXAnchor, constant: 10).isActive = true
+        plantnetButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20).isActive = true
+
+        // Set the targets for the buttons to handle touch events
+        cameraButton.addTarget(self, action: #selector(cameraButtonTapped), for: .touchUpInside)
+        plantnetButton.addTarget(self, action: #selector(plantnetButtonTapped), for: .touchUpInside)
+
+    }
+
+    // A helper method to check and request camera and photo library permissions
+    func checkPermissions() {
+        
+         // Check if the camera is available and authorized
+         let cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+         switch cameraStatus {
+         case .authorized:
+             // Camera is authorized, do nothing
+             break
+         case .notDetermined:
+             // Camera is not determined, request authorization
+             AVCaptureDevice.requestAccess(for: .video) { granted in }
+         case .denied, .restricted:
+             // Camera is denied or restricted, show an alert with settings link
+             showAlert(title: "Camera Permission", message: "Please allow access to your camera in Settings.", settingsLink: true)
+         @unknown default:
+             // Camera is unknown, show an alert with no settings link
+             showAlert(title: "Camera Permission", message: "Unknown error.", settingsLink: false)
+         }
+
+         // Check if the photo library is available and authorized
+         let photoStatus = PHPhotoLibrary.authorizationStatus()
+         switch photoStatus {
+         case .authorized:
+             // Photo library is authorized, do nothing
+             break
+         case .notDetermined:
+             // Photo library is not determined, request authorization
+             PHPhotoLibrary.requestAuthorization { status in }
+         case .denied, .restricted:
+             // Photo library is denied or restricted, show an alert with settings link
+             showAlert(title: "Photo Library Permission", message: "Please allow access to your photo library in Settings.", settingsLink: true)
+         @unknown default:
+             // Photo library is unknown, show an alert with no settings link
+             showAlert(title: "Photo Library Permission", message: "Unknown error.", settingsLink: false)
+         }
+    }
+
+    // A helper method to show an alert with an optional settings link
+    func showAlert(title: String, message: String, settingsLink: Bool) {
+        // Create an alert controller with the title and message
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        // Create a cancel action with no handler
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        // Add the cancel action to the alert controller
+        alertController.addAction(cancelAction)
+        // Check if the settings link is requested
+        if settingsLink {
+            // Create a settings action with a handler to open the app settings
+            let settingsAction = UIAlertAction(title: "Settings", style: .default) { action in
+                // Get the URL for the app settings
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    // Open the URL if possible
+                    if UIApplication.shared.canOpenURL(url) {
+                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                    }
+                }
+            }
+            // Add the settings action to the alert controller
+            alertController.addAction(settingsAction)
+        }
+        // Present the alert controller on the main view controller
+        present(alertController, animated: true, completion: nil)
+    }
+
+    // A selector method to handle the camera button tap event
+    @objc func cameraButtonTapped() {
+        // Check and request permissions
+        checkPermissions()
+        // Initialize the image picker controller
+        imagePicker = UIImagePickerController()
+        // Set the source type to camera
+        imagePicker.sourceType = .camera
+        // Set the delegate to self
+        imagePicker.delegate = self
+        // Present the image picker controller on the main view controller
+        present(imagePicker, animated: true, completion: nil)
+    }
+
+    // A selector method to handle the plantnet button tap event
+    @objc func plantnetButtonTapped() {
+        // Check if the image view has an image
+        if let image = imageView.image {
+            // Save the image to the photo library and get its local identifier
+            let localIdentifier = saveImageToLibrary(image)
+            // Create a URL for the Pl@ntNet app with the local identifier as a parameter
+            let url = URL(string: "plantnet://?image=\(localIdentifier)")!
+            // Check if the Pl@ntNet app can be opened with the URL
+            if UIApplication.shared.canOpenURL(url) {
+                // Open the Pl@ntNet app with the URL and expect a result
+                UIApplication.shared.open(url, options: [:]) { success in
+                    if success {
+                        // Register for a notification from Pl@ntNet with the plant name
+                        NotificationCenter.default.addObserver(self, selector: #selector(plantnetNotificationReceived), name: NSNotification.Name("PlantNet"), object: nil)
+                    }
+                }
+            } else {
+                // Pl@ntNet app cannot be opened, show an alert with no settings link
+                showAlert(title: "Pl@ntNet App", message: "Please install Pl@ntNet app from App Store.", settingsLink: false)
+            }
+        } else {
+            // Image view has no image, show an alert with no settings link
+            showAlert(title: "No Image", message: "Please take a photo first.", settingsLink: false)
+        }
+    }
+
+    // A helper method to save an image to the photo library and return its local identifier
+    func saveImageToLibrary(_ image: UIImage) -> String {
+        // Declare a variable for the local identifier
+        var localIdentifier = ""
+        // Create a photo library change request to add an asset with the image data
+        PHPhotoLibrary.shared().performChanges({
+            let creationRequest = PHAssetCreationRequest.forAsset()
+            creationRequest.addResource(with: .photo, data: image.jpegData(compressionQuality: 1.0)!, options: nil)
+        }) { success, error in
+            if success {
+                // Change request succeeded, get the local identifier of the created asset
+                localIdentifier = PHAsset.fetchAssets(withLocalIdentifiers: [creationRequest.placeholderForCreatedAsset!.localIdentifier], options:nil).firstObject!.localIdentifier
+
+            } else {
+                // Change request failed, print the error if any
+                print(error ?? "Unknown error")
+            }
+        }
+        // Return the local identifier
+        return localIdentifier
